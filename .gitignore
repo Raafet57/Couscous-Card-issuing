@@ -1,0 +1,28 @@
+# Node
+node_modules
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+package-lock.json
+
+# Build / dev artifacts
+dist
+build
+coverage
+.vite
+*.log
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# Local env
+.env
+.env.*
+
+# Large / external docs we don't need in the repo
+d1sdk-docs/
+AGENTS.md
+*.docx
