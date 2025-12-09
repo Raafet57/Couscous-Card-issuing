@@ -274,6 +274,28 @@ button.primary:disabled {
   background: #ffffff;
 }
 
+.kyc-panel {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.kyc-summary {
+  margin: 12px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
 .readonly {
   background: #f1f5f9;
 }

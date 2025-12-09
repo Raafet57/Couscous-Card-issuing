@@ -6,17 +6,53 @@ const KYCPage = () => {
   const [productId, setProductId] = useState("debit_standard");
 
   return (
-    <section className="panel">
+    <section className="panel kyc-panel">
       <div className="panel-header">
         <div>
           <p className="eyebrow">Step 1 of 3</p>
-          <h2>KYC completed</h2>
-          <p className="muted">You’re clear to issue a virtual debit card instantly.</p>
+          <h2>KYC and profile summary</h2>
+          <p className="muted">Stubbed KYC decision. Proceed to issue a virtual card.</p>
         </div>
       </div>
+
+      <div className="kyc-summary">
+        <div className="summary-row">
+          <span>Customer name</span>
+          <strong>R. Couscous</strong>
+        </div>
+        <div className="summary-row">
+          <span>Residency</span>
+          <strong>Malaysia</strong>
+        </div>
+        <div className="summary-row">
+          <span>Nationality</span>
+          <strong>France</strong>
+        </div>
+        <div className="summary-row">
+          <span>Risk level</span>
+          <span className="pill success">Low</span>
+        </div>
+        <div className="summary-row">
+          <span>KYC status</span>
+          <span className="pill success">Approved</span>
+        </div>
+        <div className="summary-row">
+          <span>Last review</span>
+          <strong>2024-10-01</strong>
+        </div>
+        <div className="summary-row">
+          <span>Provider</span>
+          <strong>Couscous KYC Service</strong>
+        </div>
+      </div>
+
       <div className="field">
-        <span>Choose product</span>
-        <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+        <label htmlFor="product-select">Choose product</label>
+        <select
+          id="product-select"
+          value={productId}
+          onChange={(e) => setProductId(e.target.value)}
+        >
           <option value="debit_standard">Everyday debit</option>
           <option value="credit_travel">Travel credit</option>
         </select>

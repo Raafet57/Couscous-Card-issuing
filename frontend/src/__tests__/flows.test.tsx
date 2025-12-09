@@ -109,7 +109,9 @@ describe("Frontend flows", () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByDisplayValue(/Everyday debit/), { target: { value: "credit_travel" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /choose product/i }), {
+      target: { value: "credit_travel" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
     await waitFor(() => screen.getByRole("button", { name: /issue virtual card/i }));
