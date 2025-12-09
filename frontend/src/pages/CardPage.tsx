@@ -51,6 +51,16 @@ const CardPage = () => {
   const [issuing, setIssuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
+  const [showApi, setShowApi] = useState(false);
+  const [lastApiCall, setLastApiCall] = useState<
+    | {
+        method: string;
+        path: string;
+        requestBody?: unknown;
+        responseBody?: unknown;
+      }
+    | null
+  >(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,6 +88,12 @@ const CardPage = () => {
       const created = await createCard(selectedProductId);
       localStorage.setItem(CARD_ID_KEY, created.id);
       setCard(created);
+      setLastApiCall({
+        method: "POST",
+        path: "/cards",
+        requestBody: { customerId: "cust_001", productId: selectedProductId },
+        responseBody: created,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to issue card");
     } finally {
@@ -100,6 +116,12 @@ const CardPage = () => {
       await provisionCard(card.id, walletType);
       const updated = await getCard(card.id);
       setCard(updated);
+      setLastApiCall({
+        method: "POST",
+        path: `/cards/${card.id}/provision`,
+        requestBody: { walletType },
+        responseBody: updated,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Provisioning failed");
     } finally {
@@ -237,6 +259,33 @@ const CardPage = () => {
         <pre className="raw-json" data-testid="raw-card-json">
           {JSON.stringify(card, null, 2)}
         </pre>
+      )}
+
+      <div className="actions">
+        <button className="text-button" type="button" onClick={() => setShowApi((v) => !v)}>
+          {showApi ? "Hide API call" : "Show API call"}
+        </button>
+      </div>
+      {showApi && lastApiCall && (
+        <div className="api-panel">
+          <div className="api-meta">
+            <span className="pill neutral small-text">
+              {lastApiCall.method} {lastApiCall.path}
+            </span>
+          </div>
+          <div className="api-section">
+            <p className="muted small-text">Request</p>
+            <pre className="raw-json small-json">
+              {JSON.stringify(lastApiCall.requestBody ?? {}, null, 2)}
+            </pre>
+          </div>
+          <div className="api-section">
+            <p className="muted small-text">Response</p>
+            <pre className="raw-json small-json">
+              {JSON.stringify(lastApiCall.responseBody ?? {}, null, 2)}
+            </pre>
+          </div>
+        </div>
       )}
     </section>
   );

@@ -95,6 +95,30 @@ describe("Frontend flows", () => {
     expect(screen.getByText(/Events/)).toBeInTheDocument();
   });
 
+  it("Journey 1: product choice persists and is used on create", async () => {
+    const created = { ...baseCard(), productId: "credit_travel" };
+    mockClient.createCard.mockResolvedValue(created);
+    mockClient.getCard.mockResolvedValue(created);
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<KycPage />} />
+          <Route path="/card" element={<CardPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByDisplayValue(/Everyday debit/), { target: { value: "credit_travel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    await waitFor(() => screen.getByRole("button", { name: /issue virtual card/i }));
+    fireEvent.click(screen.getByRole("button", { name: /issue virtual card/i }));
+
+    await waitFor(() => expect(mockClient.createCard).toHaveBeenCalledWith("credit_travel"));
+    expect(screen.getByText(/Travel credit/i)).toBeInTheDocument();
+  });
+
   it("Journey 2: provisions card to wallet and shows last update", async () => {
     const issued = baseCard();
     const provisioned: Card = {
@@ -118,10 +142,75 @@ describe("Frontend flows", () => {
     );
 
     await waitFor(() => screen.getByText(/Wallet: NONE/));
-    fireEvent.click(screen.getByRole("button", { name: /add to wallet/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add to Apple Wallet/i }));
 
     await waitFor(() => screen.getByText(/Wallet: PROVISIONED/));
     expect(screen.getByText(/Last update:/)).toBeInTheDocument();
+    expect(screen.getByText(/KYC/)).toBeInTheDocument();
+    expect(screen.getByText(/Card issued/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wallet/).length).toBeGreaterThan(0);
+    // At least one timestamp from the lifecycle pills is rendered (year substring).
+    expect(screen.getAllByText(/2025/).length).toBeGreaterThan(0);
+  });
+
+  it("Journey 2: supports Apple and Google wallet provisioning buttons", async () => {
+    // Apple flow
+    const issued = baseCard();
+    const provisionedApple: Card = {
+      ...issued,
+      walletStatus: "PROVISIONED",
+      events: [
+        ...issued.events,
+        { timestamp: "2025-01-01T00:00:02.000Z", type: "WALLET_PROVISION_REQUESTED", description: "Wallet provisioning requested (APPLE)" },
+        { timestamp: "2025-01-01T00:00:03.000Z", type: "WALLET_PROVISIONING", description: "Wallet provisioning in progress" },
+        { timestamp: "2025-01-01T00:00:04.000Z", type: "WALLET_PROVISIONED", description: "Wallet provisioning complete" },
+      ],
+    };
+
+    localStorage.setItem("cardId", issued.id);
+    mockClient.getCard.mockResolvedValueOnce(issued).mockResolvedValueOnce(provisionedApple);
+    mockClient.provisionCard.mockResolvedValueOnce(provisionedApple);
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={["/card"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText(/Wallet: NONE/));
+
+    fireEvent.click(screen.getByRole("button", { name: /Add to Apple Wallet/i }));
+    expect(screen.getByText(/Provisioning to Apple/i)).toBeInTheDocument();
+    await waitFor(() => screen.getByText(/Wallet: PROVISIONED/));
+    expect(mockClient.provisionCard).toHaveBeenCalledWith(issued.id, "APPLE");
+
+    // Google flow on fresh render
+    unmount();
+    const googleCard: Card = { ...baseCard(), id: "card-2", walletStatus: "NONE" };
+    const provisionedGoogle: Card = {
+      ...googleCard,
+      walletStatus: "PROVISIONED",
+      events: [
+        ...googleCard.events,
+        { timestamp: "2025-01-01T00:00:02.000Z", type: "WALLET_PROVISION_REQUESTED", description: "Wallet provisioning requested (GOOGLE)" },
+        { timestamp: "2025-01-01T00:00:03.000Z", type: "WALLET_PROVISIONING", description: "Wallet provisioning in progress" },
+        { timestamp: "2025-01-01T00:00:04.000Z", type: "WALLET_PROVISIONED", description: "Wallet provisioning complete" },
+      ],
+    };
+    localStorage.setItem("cardId", googleCard.id);
+    mockClient.getCard.mockResolvedValueOnce(googleCard).mockResolvedValueOnce(provisionedGoogle);
+    mockClient.provisionCard.mockResolvedValueOnce(provisionedGoogle);
+
+    render(
+      <MemoryRouter initialEntries={["/card"]}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => screen.getByText(/Wallet: NONE/));
+    fireEvent.click(screen.getByRole("button", { name: /Add to Google Wallet/i }));
+    expect(screen.getByText(/Provisioning to Google/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockClient.provisionCard).toHaveBeenCalledWith(googleCard.id, "GOOGLE"));
   });
 
   it("Journey 3: updates controls and shows frozen state", async () => {

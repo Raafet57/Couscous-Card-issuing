@@ -15,6 +15,19 @@ describe("Mock API", () => {
     expect(eventTypes).toEqual(expect.arrayContaining(["ACCOUNT_CREATED", "CARD_ISSUED"]));
   });
 
+  it("POST /cards uses Visa PAN for debit_standard and Mastercard for mc_ products", async () => {
+    const visaRes = await request(app).post("/cards").send({ customerId: "c1", productId: "debit_standard" });
+    expect(visaRes.status).toBe(201);
+    expect(visaRes.body.productId).toBe("debit_standard");
+    expect(visaRes.body.maskedPan.startsWith("4622")).toBe(true);
+
+    const mcRes = await request(app).post("/cards").send({ customerId: "c1", productId: "mc_premium" });
+    expect(mcRes.status).toBe(201);
+    expect(mcRes.body.productId).toBe("mc_premium");
+    // Mastercard test bins start with 51; maskedPan should reflect that
+    expect(mcRes.body.maskedPan.startsWith("5186") || mcRes.body.maskedPan.startsWith("5120")).toBe(true);
+  });
+
   it("GET /cards/:id returns 200 for existing and 404 for unknown", async () => {
     const created = await request(app).post("/cards").send({ customerId: "c1", productId: "debit_standard" });
     const id = created.body.id;
@@ -37,6 +50,14 @@ describe("Mock API", () => {
     expect(eventTypes).toEqual(
       expect.arrayContaining(["WALLET_PROVISION_REQUESTED", "WALLET_PROVISIONING", "WALLET_PROVISIONED"])
     );
+    const appleDesc = res.body.events.map((e: any) => e.description).join(" ");
+    expect(appleDesc.toUpperCase()).toContain("APPLE");
+
+    const resGoogle = await request(app)
+      .post(`/cards/${id}/provision`)
+      .send({ walletType: "GOOGLE" });
+    const googleDesc = resGoogle.body.events.map((e: any) => e.description).join(" ");
+    expect(googleDesc.toUpperCase()).toContain("GOOGLE");
   });
 
   it("POST /cards/:id/controls updates controls and status", async () => {
