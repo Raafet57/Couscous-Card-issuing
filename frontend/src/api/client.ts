@@ -10,11 +10,11 @@ const handleResponse = async <T>(res: Response): Promise<T> => {
   return (await res.json()) as T;
 };
 
-export const createCard = async (): Promise<Card> => {
+export const createCard = async (productId: string = "debit_standard"): Promise<Card> => {
   const res = await fetch(`${BASE_URL}/cards`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ customerId: "cust_001", productId: "debit_standard" }),
+    body: JSON.stringify({ customerId: "cust_001", productId }),
   });
   return handleResponse<Card>(res);
 };

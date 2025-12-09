@@ -4,6 +4,11 @@ import { createCard, getCard, provisionCard } from "../api/client";
 import type { Card, Event } from "../types";
 
 const CARD_ID_KEY = "cardId";
+const PRODUCT_LABELS: Record<string, string> = {
+  debit_standard: "Everyday debit",
+  credit_travel: "Travel credit",
+};
+const productLabel = (id?: string) => PRODUCT_LABELS[id || ""] || id || "Unknown product";
 
 const formatExpiry = (month: number, year: number) => {
   const mm = String(month).padStart(2, "0");
@@ -69,7 +74,8 @@ const CardPage = () => {
   const handleIssue = async () => {
     try {
       setIssuing(true);
-      const created = await createCard();
+      const selectedProductId = localStorage.getItem("productId") || "debit_standard";
+      const created = await createCard(selectedProductId);
       localStorage.setItem(CARD_ID_KEY, created.id);
       setCard(created);
     } catch (err) {
@@ -146,6 +152,7 @@ const CardPage = () => {
         <div>
           <h2>Card dashboard</h2>
           <p className="muted">Customer: Raf Demo</p>
+          <p className="muted small-text">Product: {productLabel(card.productId)}</p>
         </div>
         <div className="status-group">
           <StatusPill label={card.status} />
