@@ -47,7 +47,7 @@ const StatusPill = ({ label }: { label: string }) => (
 const CardPage = () => {
   const [card, setCard] = useState<Card | null>(null);
   const [loading, setLoading] = useState(true);
-  const [provisioning, setProvisioning] = useState(false);
+  const [provisioning, setProvisioning] = useState<null | "APPLE" | "GOOGLE">(null);
   const [issuing, setIssuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
@@ -93,17 +93,17 @@ const CardPage = () => {
     navigate("/");
   };
 
-  const handleProvision = async () => {
+  const handleProvision = async (walletType: "APPLE" | "GOOGLE") => {
     if (!card) return;
     try {
-      setProvisioning(true);
-      await provisionCard(card.id, "APPLE");
+      setProvisioning(walletType);
+      await provisionCard(card.id, walletType);
       const updated = await getCard(card.id);
       setCard(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Provisioning failed");
     } finally {
-      setProvisioning(false);
+      setProvisioning(null);
     }
   };
 
@@ -145,6 +145,9 @@ const CardPage = () => {
   const createdAt = findEventTime("ACCOUNT_CREATED");
   const issuedAt = findEventTime("CARD_ISSUED");
   const walletAt = findEventTime("WALLET_PROVISIONED");
+  const lastWalletEvent = card.events
+    .filter((evt) => evt.type.startsWith("WALLET_PROVISION"))
+    .at(-1);
 
   return (
     <section className="panel">
@@ -178,13 +181,28 @@ const CardPage = () => {
         <div className="card-meta">CVV •••</div>
       </div>
 
-      <div className="actions">
+      <div className="actions wallet-actions">
         <button
           className="primary"
-          disabled={provisioning || walletProvisioned}
-          onClick={handleProvision}
+          disabled={!!provisioning || walletProvisioned}
+          onClick={() => handleProvision("APPLE")}
         >
-          {walletProvisioned ? "Wallet provisioned" : provisioning ? "Provisioning…" : "Add to wallet"}
+          {provisioning === "APPLE"
+            ? "Provisioning to Apple…"
+            : walletProvisioned
+            ? "Wallet provisioned"
+            : "Add to Apple Wallet"}
+        </button>
+        <button
+          className="primary ghost"
+          disabled={!!provisioning || walletProvisioned}
+          onClick={() => handleProvision("GOOGLE")}
+        >
+          {provisioning === "GOOGLE"
+            ? "Provisioning to Google…"
+            : walletProvisioned
+            ? "Wallet provisioned"
+            : "Add to Google Wallet"}
         </button>
         <button className="text-button" type="button" onClick={handleReset}>
           Reset demo
@@ -197,6 +215,11 @@ const CardPage = () => {
           <>
             {lastEvent && (
               <p className="muted">Last update: {new Date(lastEvent.timestamp).toLocaleString()}</p>
+            )}
+            {lastWalletEvent && (
+              <p className="muted small-text">
+                Last wallet request: {lastWalletEvent.description}
+              </p>
             )}
             <EventList events={card.events} />
           </>

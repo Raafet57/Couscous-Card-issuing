@@ -203,6 +203,13 @@ button.primary:disabled {
   box-shadow: none;
 }
 
+.primary.ghost {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  box-shadow: none;
+}
+
 .text-button {
   background: transparent;
   border: none;
@@ -301,6 +308,10 @@ button.primary:disabled {
   align-items: center;
   gap: 12px;
   margin-top: 12px;
+}
+
+.wallet-actions {
+  flex-wrap: wrap;
 }
 
 .raw-json {
